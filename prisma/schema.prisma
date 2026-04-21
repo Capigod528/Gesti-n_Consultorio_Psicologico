@@ -1,25 +1,64 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-
-//configuración de consulta
 generator client {
   provider = "prisma-client-js"
 }
 
-
-//conexión a la base de datos
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-//modelo de tabla
-model Task {
-  id        Int      @id @default(autoincrement())
-  title     String
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
+model Especialista {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  especialidad String
+  fotoUrl      String?
+  citas        Cita[]
+
+  @@map("especialistas")
 }
+
+model Cita {
+  id              Int      @id @default(autoincrement())
+  pacienteNombre  String
+  pacienteEmail   String
+  fecha           DateTime
+  hora            String
+  estado          String   @default("pendiente")
+  estadoAnimo     String?
+  especialistaId  Int
+  especialista    Especialista @relation(fields: [especialistaId], references: [id])
+  createdAt       DateTime @default(now())
+  paciente        Paciente? @relation(fields: [pacienteEmail], references: [email])
+  sesiones        Sesion[]
+
+  @@map("citas")
+}
+
+model Paciente {
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  email          String   @unique
+  telefono       String?
+  edad           Int?
+  fechaNacimiento DateTime?
+  notas          String?
+  citas          Cita[]
+
+  @@map("pacientes")
+}
+
+model Sesion {
+  id           Int      @id @default(autoincrement())
+  citaId       Int
+  notas        String?
+  duracion     Int? // minutos
+  estadoAnimoPost String?
+  createdAt    DateTime @default(now())
+  cita         Cita     @relation(fields: [citaId], references: [id], onDelete: Cascade)
+
+  @@map("sesiones")
+}
+
