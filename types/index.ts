@@ -7,17 +7,17 @@ export interface Especialista {
 }
 
 export interface Cita {
-  id: number;
-  pacienteNombre: string;
-  pacienteEmail: string;
-  fecha: string;
-  hora: string;
-  estado: 'pendiente' | 'confirmada' | 'completada' | 'cancelada';
-  estadoAnimo?: string;
-  especialistaId: number;
-  createdAt: string;
-  especialista?: Especialista;
-  paciente?: Paciente;
+  id: number
+  pacienteNombre: string
+  pacienteEmail: string
+  fecha: string
+  hora: string
+  estado: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
+  estadoAnimo?: string
+  especialistaId: number
+  createdAt: string
+  especialista?: Especialista
+  paciente?: Paciente
 }
 
 export interface Paciente {
@@ -28,6 +28,7 @@ export interface Paciente {
   edad?: number;
   fechaNacimiento?: string;
   notas?: string;
+  citas?: Cita[];
 }
 
 export interface Sesion {
