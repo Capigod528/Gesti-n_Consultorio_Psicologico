@@ -10,55 +10,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Especialista {
-  id           Int      @id @default(autoincrement())
-  nombre       String
-  especialidad String
-  fotoUrl      String?
-  citas        Cita[]
-
-  @@map("especialistas")
-}
-
-model Cita {
-  id              Int      @id @default(autoincrement())
-  pacienteNombre  String
-  pacienteEmail   String
-  fecha           DateTime
-  hora            String
-  estado          String   @default("pendiente")
-  estadoAnimo     String?
-  especialistaId  Int
-  especialista    Especialista @relation(fields: [especialistaId], references: [id])
-  createdAt       DateTime @default(now())
-  paciente        Paciente? @relation(fields: [pacienteEmail], references: [email])
-  sesiones        Sesion[]
-
-  @@map("citas")
-}
-
+// modelo de tabla para Pacientes
 model Paciente {
-  id             Int      @id @default(autoincrement())
-  nombre         String
-  email          String   @unique
-  telefono       String?
-  edad           Int?
-  fechaNacimiento DateTime?
-  notas          String?
-  citas          Cita[]
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  telefono  String?
+  edad      Int
+  citas     Cita[]   // Relación: Un paciente tiene muchas citas
 
   @@map("pacientes")
 }
 
-model Sesion {
-  id           Int      @id @default(autoincrement())
-  citaId       Int
-  notas        String?
-  duracion     Int? // minutos
-  estadoAnimoPost String?
-  createdAt    DateTime @default(now())
-  cita         Cita     @relation(fields: [citaId], references: [id], onDelete: Cascade)
+// modelo de tabla para Citas Médicas
+model Cita {
+  id          Int      @id @default(autoincrement())
+  fecha       DateTime
+  motivo      String
+  notas       String?  @db.Text
+  pacienteId  Int      // Llave foránea
+  paciente    Paciente @relation(fields: [pacienteId], references: [id])
 
-  @@map("sesiones")
+  @@map("citas")
 }
-
