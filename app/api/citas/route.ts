@@ -1,39 +1,39 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { prisma } from '../../lib/prisma';
 
 export async function GET() {
   try {
     const citas = await prisma.cita.findMany({
-      include: {
-        especialista: true
-      },
-      orderBy: {
-        fecha: 'desc'
-      }
+      include: { paciente: true } // Muestra los datos del paciente en la cita
     });
     return NextResponse.json(citas);
   } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: 'Error al obtener citas' }, { status: 500 });
+    console.error("Error en GET Citas:", error);
+    return NextResponse.json({ error: "Error al obtener citas" }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { pacienteNombre, pacienteEmail, fecha, hora, especialistaId } = await request.json();
-    const cita = await prisma.cita.create({
+    const body = await request.json();
+
+    // Validación básica
+    if (!body.fecha || !body.motivo || !body.pacienteId) {
+      return NextResponse.json({ error: "Fecha, motivo y pacienteId son obligatorios" }, { status: 400 });
+    }
+
+    const nuevaCita = await prisma.cita.create({
       data: {
-        pacienteNombre,
-        pacienteEmail,
-        fecha,
-        hora,
-        especialistaId
-      }
+        fecha: new Date(body.fecha), // Convierte el string de Postman a fecha real
+        motivo: body.motivo,
+        notas: body.notas || "",
+        pacienteId: Number(body.pacienteId),
+      },
     });
-    return NextResponse.json(cita, { status: 201 });
+    return NextResponse.json(nuevaCita);
   } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: 'Error al crear cita' }, { status: 500 });
+    console.error("Error en POST Cita:", error);
+    return NextResponse.json({ error: "Error al crear la cita. Revisa si el pacienteId existe." }, { status: 500 });
   }
 }
-
