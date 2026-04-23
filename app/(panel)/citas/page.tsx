@@ -1,17 +1,34 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { CitaTable } from "@/components/citas/CitaTable";
+import { CalendarPlus, Loader2 } from "lucide-react";
+
+interface Cita {
+  id: number;
+  fecha: string;
+  motivo: string;
+  paciente: { nombre: string };
+  pacienteId: number;
+}
+
+interface Paciente {
+  id: number;
+  nombre: string;
+}
 
 export default function CitasPage() {
-  const [citas, setCitas] = useState([]);
-  const [pacientes, setPacientes] = useState([]); // Para el selector
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-
-  const [formData, setFormData] = useState({
-    fecha: "",
-    motivo: "",
-    notas: "",
-    pacienteId: ""
+  const [isEditing, setIsEditing] = useState(false); // Estado para saber si editamos
+  
+  const [formData, setFormData] = useState({ 
+    id: null as number | null, // Para saber qué cita editar
+    fecha: "", 
+    motivo: "", 
+    pacienteId: "" 
   });
 
   const fetchData = async () => {
@@ -20,10 +37,14 @@ export default function CitasPage() {
         fetch("/api/citas"),
         fetch("/api/pacientes")
       ]);
-      setCitas(await resCitas.json());
-      setPacientes(await resPacientes.json());
+
+      const dataCitas = resCitas.ok ? await resCitas.json() : [];
+      const dataPacientes = resPacientes.ok ? await resPacientes.json() : [];
+
+      setCitas(Array.isArray(dataCitas) ? dataCitas : []);
+      setPacientes(Array.isArray(dataPacientes) ? dataPacientes : []);
     } catch (error) {
-      console.error("Error cargando datos:", error);
+      console.error("Fallo al cargar datos:", error);
     } finally {
       setLoading(false);
     }
@@ -31,121 +52,138 @@ export default function CitasPage() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Función para preparar la edición
+  const handleEdit = (cita: Cita) => {
+    setFormData({
+      id: cita.id,
+      fecha: new Date(cita.fecha).toISOString().slice(0, 16),
+      motivo: cita.motivo,
+      pacienteId: cita.pacienteId.toString()
+    });
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  // Función para eliminar cita
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Deseas eliminar esta cita?")) return;
+    try {
+      const res = await fetch(`/api/citas?id=${id}`, { method: "DELETE" });
+      if (res.ok) fetchData();
+    } catch (error) {
+      alert("Error al eliminar");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const method = isEditing ? "PUT" : "POST";
+    
     try {
       const res = await fetch("/api/citas", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          pacienteId: parseInt(formData.pacienteId)
+        body: JSON.stringify({ 
+          ...formData, 
+          pacienteId: parseInt(formData.pacienteId) 
         }),
       });
 
       if (res.ok) {
         setShowModal(false);
-        setFormData({ fecha: "", motivo: "", notas: "", pacienteId: "" });
-        fetchData();
+        setFormData({ id: null, fecha: "", motivo: "", pacienteId: "" });
+        setIsEditing(false);
+        fetchData(); 
       }
     } catch (error) {
-      alert("Error al agendar la cita");
+      alert("Error en el servidor");
     }
   };
-
-  if (loading) return <p className="p-8 text-center">Cargando agenda...</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-800">Agenda de Citas</h1>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-md"
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Agenda de Citas</h1>
+          <p className="text-slate-500 text-sm">Organiza las sesiones de hoy y próximas fechas.</p>
+        </div>
+        <Button 
+          onClick={() => {
+            setIsEditing(false);
+            setFormData({ id: null, fecha: "", motivo: "", pacienteId: "" });
+            setShowModal(true);
+          }} 
+          className="bg-emerald-600 hover:bg-emerald-700 gap-2 shadow-lg"
         >
-          + Agendar Cita
-        </button>
+          <CalendarPlus size={18} /> Agendar Cita
+        </Button>
       </div>
 
-      {/* Tabla de Citas */}
-      <div className="overflow-x-auto border border-slate-200 rounded-lg">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="p-4 border-b">Fecha</th>
-              <th className="p-4 border-b">Paciente</th>
-              <th className="p-4 border-b">Motivo</th>
-              <th className="p-4 border-b">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {citas.map((c: any) => (
-              <tr key={c.id} className="border-b hover:bg-slate-50">
-                <td className="p-4 font-medium">{new Date(c.fecha).toLocaleString()}</td>
-                <td className="p-4 text-blue-600 font-bold">{c.paciente?.nombre}</td>
-                <td className="p-4">{c.motivo}</td>
-                <td className="p-4 font-bold text-emerald-600">Confirmada</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <div className="flex justify-center p-20">
+          <Loader2 className="animate-spin text-emerald-500" />
+        </div>
+      ) : (
+        /* Ahora pasamos las funciones requeridas */
+        <CitaTable citas={citas} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
 
-      {/* MODAL DE CITA */}
+      {/* MODAL (Se mantiene igual pero con título dinámico) */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">Nueva Cita Médica</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-slate-200">
+            <h2 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+              <CalendarPlus className="text-emerald-600" /> 
+              {isEditing ? "Editar Cita" : "Nueva Cita Médica"}
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Selector de Paciente */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">Seleccionar Paciente</label>
+                <label className="text-sm font-semibold text-slate-700">Seleccionar Paciente</label>
                 <select 
-                  required
-                  className="w-full p-2 border border-slate-300 rounded mt-1 outline-none focus:ring-2 focus:ring-emerald-500"
+                  required 
+                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
                   value={formData.pacienteId}
                   onChange={(e) => setFormData({...formData, pacienteId: e.target.value})}
                 >
                   <option value="">-- Elige un paciente --</option>
-                  {pacientes.map((p: any) => (
+                  {pacientes.map((p) => (
                     <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
                 </select>
               </div>
 
+              {/* Fecha */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">Fecha y Hora</label>
+                <label className="text-sm font-semibold text-slate-700">Fecha y Hora</label>
                 <input 
-                  type="datetime-local" required
-                  className="w-full p-2 border border-slate-300 rounded mt-1 outline-none"
+                  type="datetime-local" 
+                  required
+                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-emerald-500"
                   value={formData.fecha}
                   onChange={(e) => setFormData({...formData, fecha: e.target.value})}
                 />
               </div>
 
+              {/* Motivo */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">Motivo de consulta</label>
+                <label className="text-sm font-semibold text-slate-700">Motivo de consulta</label>
                 <input 
-                  type="text" required placeholder="Ej: Ansiedad, Seguimiento..."
-                  className="w-full p-2 border border-slate-300 rounded mt-1 outline-none"
+                  type="text" 
+                  required 
+                  placeholder="Ej: Ansiedad, Seguimiento..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-emerald-500"
                   value={formData.motivo}
                   onChange={(e) => setFormData({...formData, motivo: e.target.value})}
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
-                <button 
-                  type="button" onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                >
-                  Confirmar Cita
-                </button>
+              <div className="flex justify-end space-x-3 mt-8">
+                <Button variant="ghost" type="button" onClick={() => setShowModal(false)}>Cancelar</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {isEditing ? "Guardar Cambios" : "Confirmar Cita"}
+                </Button>
               </div>
             </form>
           </div>

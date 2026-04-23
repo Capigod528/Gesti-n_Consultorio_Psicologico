@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,26 +7,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// modelo de tabla para Pacientes
 model Paciente {
   id        Int      @id @default(autoincrement())
   nombre    String
   email     String   @unique
   telefono  String?
   edad      Int
-  citas     Cita[]   // Relación: Un paciente tiene muchas citas
+  citas     Cita[]
+  
+  // SOFT DELETE: Para no borrar datos médicos por error
+  activo    Boolean  @default(true) 
+  createdAt DateTime @default(now())
 
   @@map("pacientes")
 }
 
-// modelo de tabla para Citas Médicas
+model Especialista {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  especialidad String   // Ej: Psicoterapia, Psiquiatría
+  email        String   @unique
+  telefono     String?
+  citas        Cita[]   // Relación: Un especialista atiende muchas citas
+  
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("especialistas")
+}
+
 model Cita {
-  id          Int      @id @default(autoincrement())
-  fecha       DateTime
-  motivo      String
-  notas       String?  @db.Text
-  pacienteId  Int      // Llave foránea
-  paciente    Paciente @relation(fields: [pacienteId], references: [id])
+  id             Int          @id @default(autoincrement())
+  fecha          DateTime
+  motivo         String
+  notas          String?      @db.Text
+  
+  // ESTADOS: Para saber si el paciente vino, canceló o está pendiente
+  estado         String       @default("PENDIENTE") // PENDIENTE, COMPLETADA, CANCELADA
+  
+  // RELACIONES
+  pacienteId     Int
+  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
+  
+  especialistaId Int
+  especialista   Especialista @relation(fields: [especialistaId], references: [id])
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt // Auditoría: saber cuándo se modificó la cita
 
   @@map("citas")
 }

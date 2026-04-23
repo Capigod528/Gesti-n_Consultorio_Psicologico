@@ -1,32 +1,47 @@
+"use client";
+import { useEffect, useState } from "react";
+import { StatsCards } from "@/components/dashboard/StatsCards";
+
 export default function HomePage() {
+  const [stats, setStats] = useState({
+    totalPacientes: 0,
+    citasHoy: 0,
+    pacienteEstrella: "Cargando..."
+  });
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        setStats(data);
+      } catch (error) {
+        console.error("Error cargando estadísticas:", error);
+      }
+    }
+    loadStats();
+  }, []);
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">Bienvenido al Sistema, Psic. Castillo</h1>
-      <p className="text-slate-600">Este es el resumen de tu consultorio para hoy.</p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">
+          Bienvenido al Sistema, Psic. Castillo
+        </h1>
+        <p className="text-slate-600">
+          Este es el resumen en tiempo real de tu consultorio.
+        </p>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Tarjeta de Pacientes */}
-        <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm">
-          <div className="text-blue-600 text-3xl mb-2">👥</div>
-          <h3 className="font-bold text-slate-800 text-lg">Pacientes</h3>
-          <p className="text-slate-600 text-sm mb-4">Gestiona la base de datos de tus pacientes.</p>
-          <a href="/pacientes" className="text-blue-600 font-semibold hover:underline">Ver lista →</a>
-        </div>
+      {/* Componente Modular */}
+      <StatsCards stats={stats} />
 
-        {/* Tarjeta de Citas */}
-        <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 shadow-sm">
-          <div className="text-emerald-600 text-3xl mb-2">📅</div>
-          <h3 className="font-bold text-slate-800 text-lg">Citas Médicas</h3>
-          <p className="text-slate-600 text-sm mb-4">Revisa tu agenda y próximas sesiones.</p>
-          <a href="/citas" className="text-emerald-600 font-semibold hover:underline">Ir a la agenda →</a>
-        </div>
-
-        {/* Tarjeta de Configuración */}
-        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm text-slate-400">
-          <div className="text-3xl mb-2">⚙️</div>
-          <h3 className="font-bold text-lg text-slate-500">Configuración</h3>
-          <p className="text-sm">Próximamente: Ajustes del perfil.</p>
-        </div>
+      {/* Aquí podrías agregar una sección de "Citas Próximas" en el futuro */}
+      <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center">
+        <p className="text-slate-500 italic">
+          "La psicología es el estudio de la mente y el comportamiento..." 
+          - Pronto: Frases motivacionales diarias.
+        </p>
       </div>
     </div>
   );

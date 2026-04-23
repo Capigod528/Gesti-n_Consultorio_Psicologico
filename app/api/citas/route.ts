@@ -1,38 +1,47 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '../../../lib/prisma';
+import { NextResponse } from "next/server";
+import { createCita, getCitas } from "@/services/citaService"; // Asegúrate de importar getCitas
 
+// --- FUNCIÓN PARA OBTENER LAS CITAS (Arregla el error 405) ---
 export async function GET() {
   try {
-    const citas = await prisma.cita.findMany({
-      include: { paciente: true } // Muestra los datos del paciente en la cita
-    });
-    return NextResponse.json(citas);
+    const result = await getCitas();
+    
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error }, 
+        { status: result.status || 500 }
+      );
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
-    console.error("Error en GET Citas:", error);
-    return NextResponse.json({ error: "Error al obtener citas" }, { status: 500 });
+    console.error("Error en GET /api/citas:", error);
+    return NextResponse.json(
+      { error: "Error al obtener las citas" }, 
+      { status: 500 }
+    );
   }
 }
 
+// --- TU FUNCIÓN POST QUE YA TENÍAS ---
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const result = await createCita(body);
 
-    // Validación básica
-    if (!body.fecha || !body.motivo || !body.pacienteId) {
-      return NextResponse.json({ error: "Fecha, motivo y pacienteId son obligatorios" }, { status: 400 });
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error }, 
+        { status: result.status }
+      );
     }
 
-    const nuevaCita = await prisma.cita.create({
-      data: {
-        fecha: new Date(body.fecha), // Convierte el string de Postman a fecha real
-        motivo: body.motivo,
-        notas: body.notas || "",
-        pacienteId: Number(body.pacienteId),
-      },
-    });
-    return NextResponse.json(nuevaCita);
+    return NextResponse.json(result.data, { status: 201 });
   } catch (error) {
-    console.error("Error en POST Cita:", error);
-    return NextResponse.json({ error: "Error al crear la cita. Revisa si el pacienteId existe." }, { status: 500 });
+    console.error("Error en POST /api/citas:", error);
+    return NextResponse.json(
+      { error: "Error interno al procesar la cita" }, 
+      { status: 500 }
+    );
   }
 }
