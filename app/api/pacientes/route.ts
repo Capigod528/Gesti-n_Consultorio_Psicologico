@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllPacientes, createPaciente } from "@/services/pacienteService";
+import { getAllPacientes, createPaciente, updatePaciente, deletePaciente } from "@/services/pacienteService";
 
 export async function GET() {
   try {
@@ -21,6 +21,42 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: "Error al crear paciente" }, 
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { id, ...data } = await request.json();
+    if (!id) {
+      return NextResponse.json({ error: "ID de paciente no proporcionado" }, { status: 400 });
+    }
+    const pacienteActualizado = await updatePaciente(id, data);
+    return NextResponse.json(pacienteActualizado);
+  } catch (error) {
+    console.error("Error en PUT /api/pacientes:", error);
+    return NextResponse.json(
+      { error: "Error al actualizar paciente" }, 
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = Number(searchParams.get("id"));
+
+    if (!id) {
+      return NextResponse.json({ error: "ID de paciente no proporcionado" }, { status: 400 });
+    }
+    await deletePaciente(id);
+    return NextResponse.json({ message: "Paciente eliminado" });
+  } catch (error) {
+    console.error("Error en DELETE /api/pacientes:", error);
+    return NextResponse.json(
+      { error: "Error al eliminar paciente" }, 
       { status: 500 }
     );
   }

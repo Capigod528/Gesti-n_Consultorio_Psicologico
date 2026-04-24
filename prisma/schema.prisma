@@ -13,11 +13,9 @@ model Paciente {
   email     String   @unique
   telefono  String?
   edad      Int
-  citas     Cita[]
-  
-  // SOFT DELETE: Para no borrar datos médicos por error
-  activo    Boolean  @default(true) 
+  activo    Boolean  @default(true)
   createdAt DateTime @default(now())
+  citas     Cita[]
 
   @@map("pacientes")
 }
@@ -25,13 +23,12 @@ model Paciente {
 model Especialista {
   id           Int      @id @default(autoincrement())
   nombre       String
-  especialidad String   // Ej: Psicoterapia, Psiquiatría
+  especialidad String
   email        String   @unique
   telefono     String?
-  citas        Cita[]   // Relación: Un especialista atiende muchas citas
-  
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
+  citas        Cita[]
 
   @@map("especialistas")
 }
@@ -41,19 +38,28 @@ model Cita {
   fecha          DateTime
   motivo         String
   notas          String?      @db.Text
-  
-  // ESTADOS: Para saber si el paciente vino, canceló o está pendiente
-  estado         String       @default("PENDIENTE") // PENDIENTE, COMPLETADA, CANCELADA
-  
-  // RELACIONES
   pacienteId     Int
-  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
-  
-  especialistaId Int
-  especialista   Especialista @relation(fields: [especialistaId], references: [id])
-
   createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt // Auditoría: saber cuándo se modificó la cita
+  especialistaId Int
+  estado         String       @default("PENDIENTE")
+  updatedAt      DateTime     @updatedAt
+  especialista   Especialista @relation(fields: [especialistaId], references: [id])
+  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
 
+  @@index([especialistaId], map: "citas_especialistaId_fkey")
+  @@index([pacienteId], map: "citas_pacienteId_fkey")
   @@map("citas")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  password  String?
+  role      String   @default("USER")
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }

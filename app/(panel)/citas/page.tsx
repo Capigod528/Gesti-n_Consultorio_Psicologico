@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CitaTable } from "@/components/citas/CitaTable";
-import { CalendarPlus, Loader2 } from "lucide-react";
+import { CalendarPlus, Loader2, Stethoscope } from "lucide-react"; // Añadimos Stethoscope
 
 interface Cita {
   id: number;
@@ -10,6 +10,8 @@ interface Cita {
   motivo: string;
   paciente: { nombre: string };
   pacienteId: number;
+  especialista?: { nombre: string }; // Añadimos esto para la tabla
+  especialistaId?: number;
 }
 
 interface Paciente {
@@ -17,32 +19,44 @@ interface Paciente {
   nombre: string;
 }
 
+interface Especialista {
+  id: number;
+  nombre: string;
+  especialidad: string;
+}
+
 export default function CitasPage() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [especialistas, setEspecialistas] = useState<Especialista[]>([]); // Nuevo estado
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Estado para saber si editamos
+  const [isEditing, setIsEditing] = useState(false);
   
   const [formData, setFormData] = useState({ 
-    id: null as number | null, // Para saber qué cita editar
+    id: null as number | null, 
     fecha: "", 
     motivo: "", 
-    pacienteId: "" 
+    pacienteId: "",
+    especialistaId: "" // Nuevo campo en el formulario
   });
 
   const fetchData = async () => {
     try {
-      const [resCitas, resPacientes] = await Promise.all([
+      // Ahora cargamos las 3 entidades al mismo tiempo
+      const [resCitas, resPacientes, resEspecialistas] = await Promise.all([
         fetch("/api/citas"),
-        fetch("/api/pacientes")
+        fetch("/api/pacientes"),
+        fetch("/api/especialistas") // Tu nueva ruta de especialistas
       ]);
 
       const dataCitas = resCitas.ok ? await resCitas.json() : [];
       const dataPacientes = resPacientes.ok ? await resPacientes.json() : [];
+      const dataEspecialistas = resEspecialistas.ok ? await resEspecialistas.json() : [];
 
       setCitas(Array.isArray(dataCitas) ? dataCitas : []);
       setPacientes(Array.isArray(dataPacientes) ? dataPacientes : []);
+      setEspecialistas(Array.isArray(dataEspecialistas) ? dataEspecialistas : []);
     } catch (error) {
       console.error("Fallo al cargar datos:", error);
     } finally {
@@ -52,19 +66,18 @@ export default function CitasPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Función para preparar la edición
   const handleEdit = (cita: Cita) => {
     setFormData({
       id: cita.id,
       fecha: new Date(cita.fecha).toISOString().slice(0, 16),
       motivo: cita.motivo,
-      pacienteId: cita.pacienteId.toString()
+      pacienteId: cita.pacienteId.toString(),
+      especialistaId: cita.especialistaId?.toString() || "" // Cargamos el ID del especialista
     });
     setIsEditing(true);
     setShowModal(true);
   };
 
-  // Función para eliminar cita
   const handleDelete = async (id: number) => {
     if (!confirm("¿Deseas eliminar esta cita?")) return;
     try {
@@ -85,13 +98,14 @@ export default function CitasPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           ...formData, 
-          pacienteId: parseInt(formData.pacienteId) 
+          pacienteId: parseInt(formData.pacienteId),
+          especialistaId: parseInt(formData.especialistaId) // Enviamos el ID numérico
         }),
       });
 
       if (res.ok) {
         setShowModal(false);
-        setFormData({ id: null, fecha: "", motivo: "", pacienteId: "" });
+        setFormData({ id: null, fecha: "", motivo: "", pacienteId: "", especialistaId: "" });
         setIsEditing(false);
         fetchData(); 
       }
@@ -110,7 +124,7 @@ export default function CitasPage() {
         <Button 
           onClick={() => {
             setIsEditing(false);
-            setFormData({ id: null, fecha: "", motivo: "", pacienteId: "" });
+            setFormData({ id: null, fecha: "", motivo: "", pacienteId: "", especialistaId: "" });
             setShowModal(true);
           }} 
           className="bg-emerald-600 hover:bg-emerald-700 gap-2 shadow-lg"
@@ -124,11 +138,9 @@ export default function CitasPage() {
           <Loader2 className="animate-spin text-emerald-500" />
         </div>
       ) : (
-        /* Ahora pasamos las funciones requeridas */
         <CitaTable citas={citas} onEdit={handleEdit} onDelete={handleDelete} />
       )}
 
-      {/* MODAL (Se mantiene igual pero con título dinámico) */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-slate-200">
@@ -150,6 +162,26 @@ export default function CitasPage() {
                   <option value="">-- Elige un paciente --</option>
                   {pacientes.map((p) => (
                     <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* NUEVO: Selector de Especialista */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Stethoscope size={14} className="text-indigo-500" /> Asignar Especialista
+                </label>
+                <select 
+                  required 
+                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+                  value={formData.especialistaId}
+                  onChange={(e) => setFormData({...formData, especialistaId: e.target.value})}
+                >
+                  <option value="">-- Selecciona al profesional --</option>
+                  {especialistas.map((esp) => (
+                    <option key={esp.id} value={esp.id}>
+                      {esp.nombre} ({esp.especialidad})
+                    </option>
                   ))}
                 </select>
               </div>

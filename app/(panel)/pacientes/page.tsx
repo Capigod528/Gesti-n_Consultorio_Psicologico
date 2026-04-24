@@ -41,20 +41,23 @@ export default function PacientesPage() {
 
   useEffect(() => { fetchPacientes(); }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const method = isEditing ? "PUT" : "POST";
-    const url = "/api/pacientes";
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          edad: parseInt(formData.edad)
-        }),
-      });
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      console.log("handleSubmit called");
+      console.log("formData:", formData);
+      const method = isEditing ? "PUT" : "POST";
+      const url = "/api/pacientes";
+  
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            edad: parseInt(formData.edad)
+          }),
+        });
+        console.log("Response from API:", res);
 
       if (res.ok) {
         setShowModal(false);

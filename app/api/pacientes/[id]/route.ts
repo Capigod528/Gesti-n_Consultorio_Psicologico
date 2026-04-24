@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/prisma';
+import { updatePaciente, deletePaciente } from "@/services/pacienteService";
 
 // PUT: Actualizar un paciente existente
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
@@ -7,31 +7,35 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const id = Number(params.id);
     const body = await request.json();
 
-    const actualizado = await prisma.paciente.update({
-      where: { id },
-      data: {
-        nombre: body.nombre,
-        email: body.email,
-        telefono: body.telefono,
-        edad: Number(body.edad),
-      },
-    });
+    // Usamos el service para mantener la lógica centralizada
+    const result = await updatePaciente(id, body);
 
-    return NextResponse.json(actualizado);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
-    return NextResponse.json({ error: "Error al actualizar paciente" }, { status: 500 });
+    console.error("Error en PUT /api/pacientes/[id]:", error);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
-// DELETE: Eliminar un paciente
+// DELETE: Borrado lógico para no romper la integridad de las citas
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = Number(params.id);
-    await prisma.paciente.delete({
-      where: { id },
-    });
-    return NextResponse.json({ message: "Paciente eliminado correctamente" });
+    
+    // El service ahora pone 'activo: false' en lugar de borrarlo físicamente
+    const result = await deletePaciente(id);
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({ message: "Paciente desactivado correctamente" });
   } catch (error) {
-    return NextResponse.json({ error: "No se puede eliminar: tiene citas asociadas" }, { status: 400 });
+    console.error("Error en DELETE /api/pacientes/[id]:", error);
+    return NextResponse.json({ error: "Error al procesar la baja" }, { status: 500 });
   }
 }
