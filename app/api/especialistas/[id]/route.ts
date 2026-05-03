@@ -10,6 +10,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       where: { id },
       data: {
         nombre: body.nombre,
+        email: body.email,
         especialidad: body.especialidad,
         telefono: body.telefono,
       }
