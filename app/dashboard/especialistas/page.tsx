@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Especialista } from '@/types'
-import { Plus, Users2, Sparkles, X, Loader2 } from 'lucide-react'
+import { Plus, Users2, Sparkles, X, Loader2, Edit2, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function EspecialistasPage() {
   const [especialistas, setEspecialistas] = useState<Especialista[]>([])
@@ -23,6 +24,7 @@ export default function EspecialistasPage() {
       setEspecialistas(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error cargando especialistas:", error)
+      toast.error("Error al cargar especialistas")
     } finally {
       setLoading(false)
     }
@@ -43,13 +45,17 @@ export default function EspecialistasPage() {
     setShowModal(true)
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar a este especialista?")) return
+  const handleDelete = async (id: number, nombre: string) => {
     try {
       const res = await fetch(`/api/especialistas/${id}`, { method: "DELETE" })
-      if (res.ok) fetchEspecialistas()
+      if (res.ok) {
+        toast.success(`Especialista "${nombre}" eliminado correctamente`)
+        fetchEspecialistas()
+      } else {
+        toast.error("Error al eliminar especialista")
+      }
     } catch (error) {
-      alert("Error al eliminar")
+      toast.error("Error al eliminar especialista")
     }
   }
 
@@ -66,13 +72,16 @@ export default function EspecialistasPage() {
       })
 
       if (res.ok) {
+        toast.success(isEditing ? "Especialista actualizado correctamente" : "Especialista creado correctamente")
         setShowModal(false)
         setIsEditing(false)
         setFormData({ id: null, nombre: "", email: "", especialidad: "" })
         fetchEspecialistas()
+      } else {
+        toast.error("Error al procesar la solicitud")
       }
     } catch (error) {
-      alert("Error al procesar la solicitud")
+      toast.error("Error al procesar la solicitud")
     }
   }
 
@@ -115,36 +124,33 @@ export default function EspecialistasPage() {
       {/* Grid de Tarjetas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {especialistas.map((especialista) => (
-          <div key={especialista.id} className="group relative p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-lg transition-all">
+          <div key={especialista.id} className="group relative p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            {/* Línea superior decorativa */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
             <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{especialista.nombre}</h3>
-                <p className="text-sm text-indigo-600 font-semibold">{especialista.especialidad}</p>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{especialista.nombre}</h3>
+                <p className="text-sm text-indigo-600 font-semibold mt-1">{especialista.especialidad}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => handleEdit(especialista)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                   title="Editar"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                  <Edit2 size={16} />
                 </button>
                 <button
-                  onClick={() => handleDelete(especialista.id)}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  onClick={() => handleDelete(especialista.id, especialista.nombre)}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                   title="Eliminar"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>
-            <p className="text-sm text-slate-500 mb-4">{especialista.email}</p>
-            <button
-              onClick={() => {}}
-              className="w-full py-2 px-4 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-semibold"
-            >
-              Ver Perfil
-            </button>
+            <p className="text-sm text-slate-500 border-t border-slate-100 pt-3">{especialista.email}</p>
           </div>
         ))}
       </div>
@@ -162,59 +168,61 @@ export default function EspecialistasPage() {
 
       {/* MODAL PARA CREAR/EDITAR */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-800">
                 {isEditing ? "Editar Especialista" : "Nuevo Especialista"}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-lg transition-colors">
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-semibold text-slate-700">Nombre Completo</label>
+                <label className="text-xs font-semibold text-slate-600 uppercase">Nombre Completo</label>
                 <input
                   required
-                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full mt-1 p-3 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
                   value={formData.nombre}
                   onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                  placeholder="Dr. Juan Pérez"
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-slate-700">Correo Electrónico</label>
+                <label className="text-xs font-semibold text-slate-600 uppercase">Correo Electrónico</label>
                 <input
                   type="email"
                   required
-                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full mt-1 p-3 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="correo@ejemplo.com"
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-slate-700">Especialidad</label>
+                <label className="text-xs font-semibold text-slate-600 uppercase">Especialidad</label>
                 <input
-                  placeholder="Ej: Psicólogo Clínico"
+                  placeholder="Psicólogo Clínico"
                   required
-                  className="w-full p-2.5 border border-slate-300 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full mt-1 p-3 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
                   value={formData.especialidad}
                   onChange={(e) => setFormData({...formData, especialidad: e.target.value})}
                 />
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-semibold"
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-semibold flex items-center gap-2"
                 >
                   {isEditing ? "Guardar Cambios" : "Registrar"}
                 </button>

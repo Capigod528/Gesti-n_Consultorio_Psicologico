@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = Number(params.id);
+    const { id: idStr } = await params;
+    const id = Number(idStr);
     const body = await request.json();
 
     const actualizado = await prisma.especialista.update({
@@ -21,10 +22,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = Number(params.id);
-    // Aplicamos Soft Delete: Solo desactivamos al especialista
+    const { id: idStr } = await params;
+    const id = Number(idStr);
+
     await prisma.especialista.update({
       where: { id },
       data: { activo: false }

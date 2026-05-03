@@ -16,3 +16,22 @@ export async function createEspecialista(data: any) {
     }
   });
 }
+
+export async function updateEspecialista(id: number, data: any) {
+  return await prisma.especialista.update({
+    where: { id },
+    data: {
+      nombre: data.nombre,
+      email: data.email,
+      especialidad: data.especialidad,
+      telefono: data.telefono || "",
+    }
+  });
+}
+
+export async function deleteEspecialista(id: number) {
+  return await prisma.especialista.update({
+    where: { id },
+    data: { activo: false }
+  });
+}
