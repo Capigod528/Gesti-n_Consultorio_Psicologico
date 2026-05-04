@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 import { 
-  Brain, Mail, Lock, ArrowRight, LogIn, Sparkles, Loader2 
+  Brain, Mail, Lock, LogIn, Sparkles, Loader2 
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -19,35 +19,54 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      toast.error("Credenciales incorrectas", {
-        description: "Revisa tu correo y contraseña e intenta de nuevo.",
+      if (result?.error) {
+        toast.error("Credenciales incorrectas", {
+          description: "Revisa tu correo y contraseña e intenta de nuevo.",
+        });
+        setLoading(false);
+      } else {
+        toast.success("¡Bienvenido de nuevo!", {
+          icon: <Sparkles className="text-amber-500" />,
+        });
+
+        // 1. Obtenemos la sesión actualizada para conocer el rol
+        const sessionResponse = await fetch("/api/auth/session");
+        const session = await sessionResponse.json();
+        const role = session?.user?.role;
+
+        // 2. Redirigimos según el rol (Admin/User -> /dashboard | Especialista -> /especialista)
+        if (role === "ESPECIALISTA") {
+          router.push("/especialista");
+        } else {
+          router.push("/dashboard");
+        }
+
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error("Error de conexión", {
+        description: "Ocurrió un problema al intentar iniciar sesión.",
       });
       setLoading(false);
-    } else {
-      toast.success("¡Bienvenido de nuevo!", {
-        icon: <Sparkles className="text-amber-500" />,
-      });
-      router.push("/dashboard");
-      router.refresh();
     }
   };
 
   return (
     <div className="min-h-screen bg-[#fafbff] flex items-center justify-center p-6 relative overflow-hidden font-sans">
       
-      {/* Fondo con orbes (Igual a tu Landing y Register) */}
+      {/* Fondo con orbes estéticos */}
       <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-indigo-100/40 rounded-full blur-[120px] z-0"></div>
       <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-violet-100/40 rounded-full blur-[120px] z-0"></div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(79,70,229,0.1)] border border-white p-8 md:p-12 transition-all">
+        <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(79,70,229,0.1)] border border-white p-8 md:p-12">
           
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-200 mb-6">
@@ -70,7 +89,8 @@ export default function LoginPage() {
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                 <input 
-                  type="email" required
+                  type="email" 
+                  required
                   placeholder="hola@tuconsultorio.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +104,8 @@ export default function LoginPage() {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                 <input 
-                  type="password" required
+                  type="password" 
+                  required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -99,7 +120,7 @@ export default function LoginPage() {
               className="w-full bg-slate-950 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-600 hover:-translate-y-1.5 transition-all shadow-2xl shadow-slate-200 mt-6 flex items-center justify-center gap-3 group disabled:opacity-70 disabled:hover:translate-y-0"
             >
               {loading ? "Iniciando sesión..." : "Entrar al Panel"}
-              <LogIn size={22} className="group-hover:translate-x-1.5 transition-transform" />
+              {!loading && <LogIn size={22} className="group-hover:translate-x-1.5 transition-transform" />}
             </button>
           </form>
 
