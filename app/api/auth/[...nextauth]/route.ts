@@ -44,7 +44,8 @@ const handler = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role, // Esto servirá para los paneles de especialista
+          role: user.role,
+          especialistaId: (user as any).especialistaId,
         };
       }
     })
@@ -57,11 +58,17 @@ const handler = NextAuth({
   callbacks: {
     // Esto es para que el 'role' del usuario esté disponible en el cliente (frontend)
     async jwt({ token, user }) {
-      if (user) token.role = (user as any).role;
+      if (user) {
+        token.role = (user as any).role;
+        token.especialistaId = (user as any).especialistaId;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).role = token.role;
+      if (session.user) {
+        (session.user as any).role = token.role;
+        (session.user as any).especialistaId = token.especialistaId;
+      }
       return session;
     }
   }

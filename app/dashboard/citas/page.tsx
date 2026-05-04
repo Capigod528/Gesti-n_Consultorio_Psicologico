@@ -27,7 +27,7 @@ export default function CitasPage() {
 
   useEffect(() => { fetchCitas() }, [])
 
-  const filteredCitas = citas.filter(c => !filterEstado || c.estado === filterEstado)
+  const filteredCitas = citas.filter(c => !filterEstado || c.estado?.toLowerCase() === filterEstado.toLowerCase())
 
   return (
     <div className="container mx-auto p-6 space-y-8 min-h-screen bg-[#F8FAFC]">
@@ -68,34 +68,54 @@ export default function CitasPage() {
             <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40} /></div>
           ) : (
             <div className="grid gap-4">
-              {filteredCitas.map((cita) => (
-                /* TARJETA CON BORDES SUAVES Y SOMBRAS */
-                <div key={cita.id} className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                      <Calendar size={24} />
+              {filteredCitas.map((cita) => {
+                const fecha = new Date(cita.fecha)
+                const fechaFormateada = fecha.toLocaleDateString('es-PE', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })
+                const horaFormateada = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+                return (
+                  /* TARJETA CON BORDES SUAVES Y SOMBRAS */
+                  <div key={cita.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 group">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                          <Calendar size={24} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-900">Cita #{cita.id}</h3>
+                          <p className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
+                            <Clock size={14} /> {fechaFormateada} • {horaFormateada}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-5 py-2 bg-emerald-50 text-emerald-600 text-xs font-black rounded-full uppercase">
+                        {cita.estado?.toLowerCase()}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-black text-slate-900">Cita #{cita.id}</h3>
-                      <p className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
-                        <Clock size={14} /> {cita.fecha} • {cita.hora}
-                      </p>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Especialista</p>
+                        <p className="text-sm font-bold text-slate-700">
+                          {cita.especialista?.nombre ?? `ID ${cita.especialistaId}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Paciente</p>
+                        <p className="text-sm font-bold text-slate-700">
+                          {cita.paciente?.nombre ?? cita.pacienteNombre}
+                        </p>
+                      </div>
                     </div>
+
+                    <p className="text-slate-600">Motivo: {cita.motivo}</p>
                   </div>
-                  
-                  <div className="flex items-center gap-6 text-right">
-                    <div className="hidden md:block">
-                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Especialista</p>
-                      <p className="text-sm font-bold text-slate-700 flex items-center justify-end gap-1">
-                        <UserCheck size={14} className="text-indigo-500" /> ID: {cita.especialistaId}
-                      </p>
-                    </div>
-                    <span className="px-5 py-2 bg-emerald-50 text-emerald-600 text-xs font-black rounded-full uppercase">
-                      {cita.estado}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </main>

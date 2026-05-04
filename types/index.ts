@@ -12,10 +12,14 @@ export interface Cita {
   pacienteEmail: string
   fecha: string
   hora: string
-  estado: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
+  motivo: string        // ✅ agregar esto
+  notas?: string        // ✅ también existe en el schema
+  estado: 'PENDIENTE' | 'CONFIRMADA' | 'COMPLETADA' | 'CANCELADA'
   estadoAnimo?: string
   especialistaId: number
+  pacienteId: number    // ✅ también existe en el schema
   createdAt: string
+  updatedAt?: string
   especialista?: Especialista
   paciente?: Paciente
 }

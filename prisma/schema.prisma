@@ -29,6 +29,7 @@ model Especialista {
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   citas        Cita[]
+  user         User?
 
   @@map("especialistas")
 }
@@ -52,14 +53,23 @@ model Cita {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?  @unique
-  password  String?
-  role      String   @default("USER")
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  password      String?
+  role          Role         @default(USER)
+  especialistaId Int?         @unique
+  especialista  Especialista? @relation(fields: [especialistaId], references: [id])
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@map("users")
+}
+
+enum Role {
+  ADMIN
+  SECRETARY
+  SPECIALIST
+  USER
 }

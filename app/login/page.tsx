@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const getRoleText = () => {
+    if (typeof window !== "undefined") {
+      const role = new URLSearchParams(window.location.search).get("role");
+      return role === "SECRETARY" ? "Secretaria" : "Especialista";
+    }
+    return "Especialista";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -60,7 +68,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">PsicoControl</h1>
             <p className="text-slate-500 mt-3 font-medium text-sm flex items-center justify-center gap-2">
               <Sparkles size={14} className="text-amber-500" />
-              Accede a tu panel profesional
+              Accede como {getRoleText()}
             </p>
           </div>
 

@@ -33,27 +33,41 @@ export function Sidebar() {
           <LayoutDashboard size={22} /> Dashboard
         </Link>
 
-        <Link 
-          href="/dashboard/pacientes" 
-          className={`${linkStyle} ${pathname.includes("/pacientes") ? activeStyle : inactiveStyle}`}
-        >
-          <Users size={22} /> Pacientes
-        </Link>
+        {((session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SECRETARY") && (
+          <>
+            <Link 
+              href="/dashboard/pacientes" 
+              className={`${linkStyle} ${pathname.includes("/pacientes") ? activeStyle : inactiveStyle}`}
+            >
+              <Users size={22} /> Pacientes
+            </Link>
 
-        {/* CITAS MÉDICAS: Tu sección de agenda */}
-        <Link 
-          href="/dashboard/citas" 
-          className={`${linkStyle} ${pathname.includes("/citas") ? activeStyle : inactiveStyle}`}
-        >
-          <Calendar size={22} /> Citas Médicas
-        </Link>
-        
-        <Link 
-          href="/dashboard/especialistas" 
-          className={`${linkStyle} ${pathname.includes("/especialistas") ? activeStyle : inactiveStyle}`}
-        >
-          <Stethoscope size={22} /> Especialistas
-        </Link>
+            <Link 
+              href="/dashboard/citas" 
+              className={`${linkStyle} ${pathname.includes("/citas") ? activeStyle : inactiveStyle}`}
+            >
+              <Calendar size={22} /> Citas Médicas
+            </Link>
+          </>
+        )}
+
+        {(session?.user as any)?.role === "ADMIN" && (
+          <Link 
+            href="/dashboard/especialistas" 
+            className={`${linkStyle} ${pathname.includes("/especialistas") ? activeStyle : inactiveStyle}`}
+          >
+            <Stethoscope size={22} /> Especialistas
+          </Link>
+        )}
+
+        {(session?.user as any)?.role === "SPECIALIST" && (
+          <Link 
+            href="/dashboard/specialist" 
+            className={`${linkStyle} ${pathname.includes("/specialist") ? activeStyle : inactiveStyle}`}
+          >
+            <Calendar size={22} /> Mis Citas
+          </Link>
+        )}
       </nav>
 
       {/* SECCIÓN INFERIOR: Perfil y Salida */}
@@ -62,7 +76,7 @@ export function Sidebar() {
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 border-2 border-slate-700 flex-shrink-0" />
           <div className="overflow-hidden">
             <p className="text-xs font-black text-slate-200 truncate">{session?.user?.name || "Ander"}</p>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Profesional</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{((session?.user as any)?.role || "Profesional").replace("SPECIALIST", "Especialista").replace("SECRETARY", "Secretaria").replace("ADMIN", "Administrador")}</p>
           </div>
         </div>
         

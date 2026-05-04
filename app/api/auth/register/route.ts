@@ -4,26 +4,70 @@ import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const { nombre, apellido, email, password, telefono, especialidad, role } = await request.json();
 
+    // Validar datos obligatorios
+    if (!nombre || !email || !password) {
+      return NextResponse.json({
+        message: "Faltan datos obligatorios"
+      }, { status: 400 });
+    }
+
+    // Validar que el rol sea válido
+    const validRoles = ["SPECIALIST", "SECRETARY"];
+    const userRole = validRoles.includes(role) ? role : "SPECIALIST";
+
+    // Validar email único
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json({
+        message: "El email ya está registrado"
+      }, { status: 400 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const fullName = `${nombre} ${apellido}`;
+
+    // Si es especialista, crear con relación
+    if (userRole === "SPECIALIST") {
+      const user = await prisma.user.create({
+        data: {
+          name: fullName,
+          email,
+          password: hashedPassword,
+          role: "SPECIALIST",
+          especialista: {
+            create: {
+              nombre: fullName,
+              email,
+              telefono: telefono || "",
+              especialidad: especialidad || "General",
+            },
+          },
+        },
+        include: {
+          especialista: true,
+        },
+      });
+      return NextResponse.json({ message: "Usuario creado exitosamente", user });
+    }
+
+    // Para secretaria, crear usuario simple
     const user = await prisma.user.create({
       data: {
-        name,
+        name: fullName,
         email,
         password: hashedPassword,
-        role: "ADMIN",
+        role: "SECRETARY",
       },
     });
 
-    return NextResponse.json(user);
+    return NextResponse.json({ message: "Usuario creado exitosamente", user });
   } catch (error: any) {
-    // ESTO ES CLAVE: Mira tu terminal de VS Code después de intentar registrarte
-    console.error("DEBUG REGISTRO:", error); 
-    
-    return NextResponse.json({ 
-      error: "Error al crear usuario",
-      message: error.message // Esto enviará el error real al navegador para que lo veas
+    console.error("DEBUG REGISTRO:", error);
+
+    return NextResponse.json({
+      message: error.message || "Error al crear usuario"
     }, { status: 500 });
   }
 }
