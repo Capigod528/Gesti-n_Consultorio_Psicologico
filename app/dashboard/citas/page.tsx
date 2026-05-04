@@ -10,7 +10,6 @@ import { NuevaCitaModal } from '@/components/nueva-cita-modal'
 export default function CitasPage() {
   const [citas, setCitas] = useState<Cita[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterEstado, setFilterEstado] = useState('')
 
   const fetchCitas = async () => {
     try {
@@ -27,8 +26,6 @@ export default function CitasPage() {
 
   useEffect(() => { fetchCitas() }, [])
 
-  const filteredCitas = citas.filter(c => !filterEstado || c.estado === filterEstado)
-
   return (
     <div className="container mx-auto p-6 space-y-8 min-h-screen bg-[#F8FAFC]">
       <header className="flex justify-between items-end">
@@ -41,35 +38,25 @@ export default function CitasPage() {
         </Button>
       </header>
 
-      {/* DISEÑO LADO A LADO */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* IZQUIERDA: FORMULARIO FIJO */}
         <aside className="lg:col-span-4 sticky top-6">
           <NuevaCitaModal onClose={() => {}} onSuccess={fetchCitas} />
         </aside>
 
-        {/* DERECHA: LISTADO DE CITAS */}
         <main className="lg:col-span-8 space-y-6">
-          <div className="flex gap-2 p-1 bg-white border border-slate-100 rounded-2xl w-fit shadow-sm">
-            {['', 'pendiente', 'confirmada'].map((e) => (
-              <Button 
-                key={e} 
-                onClick={() => setFilterEstado(e)}
-                variant={filterEstado === e ? 'default' : 'ghost'}
-                className={`rounded-xl px-6 capitalize font-bold ${filterEstado === e ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}
-              >
-                {e === '' ? 'Todas' : e}
-              </Button>
-            ))}
-          </div>
-
           {loading ? (
-            <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40} /></div>
+            <div className="py-20 text-center">
+              <Loader2 className="animate-spin mx-auto text-indigo-600" size={40} />
+            </div>
+          ) : citas.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
+              <Calendar className="mx-auto text-slate-300 mb-4" size={48} />
+              <p className="text-slate-500 font-bold">No hay citas registradas aún.</p>
+            </div>
           ) : (
             <div className="grid gap-4">
-              {filteredCitas.map((cita) => (
-                /* TARJETA CON BORDES SUAVES Y SOMBRAS */
+              {citas.map((cita) => (
                 <div key={cita.id} className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
                   <div className="flex items-center gap-5">
                     <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">

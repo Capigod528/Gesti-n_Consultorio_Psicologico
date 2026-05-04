@@ -1,91 +1,94 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Calendar, Users, CheckCircle, Sparkles, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Stethoscope, Mail, Phone, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-export default function EspecialistaPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+type Especialista = {
+  id: number;
+  nombre: string;
+  especialidad: string;
+  email: string;
+  telefono: string;
+};
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <p className="font-bold text-slate-400 animate-pulse">Cargando tu panel...</p>
-      </div>
-    );
-  }
+export default function EspecialistasPage() {
+  const [especialistas, setEspecialistas] = useState<Especialista[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!session) {
-    router.push("/login");
-    return null;
-  }
+  const fetchEspecialistas = async () => {
+    try {
+      const res = await fetch("/api/especialistas");
+      const data = await res.json();
+      setEspecialistas(Array.isArray(data) ? data : []);
+    } catch {
+      toast.error("Error cargando especialistas");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const userName = session.user?.name || "Especialista";
+  useEffect(() => { fetchEspecialistas() }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <Loader2 className="animate-spin text-indigo-600" size={40} />
+    </div>
+  );
 
   return (
-    <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
-      <header className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-          Bienvenido, {userName} 👋
-        </h1>
-        <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
-          <Sparkles size={16} className="text-amber-500" />
-          Aquí tienes el resumen de tu agenda de hoy.
-        </p>
-      </header>
-
-      {/* Tarjetas de estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 flex items-center justify-between transition-transform hover:-translate-y-1">
-          <div>
-            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Citas Hoy</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">—</h3>
-          </div>
-          <div className="bg-indigo-50 p-4 rounded-2xl text-indigo-600 shadow-sm shadow-indigo-100">
-            <Calendar size={28} />
-          </div>
-        </div>
-
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 flex items-center justify-between transition-transform hover:-translate-y-1">
-          <div>
-            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Mis Pacientes</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">—</h3>
-          </div>
-          <div className="bg-emerald-50 p-4 rounded-2xl text-emerald-600 shadow-sm shadow-emerald-100">
-            <Users size={28} />
-          </div>
-        </div>
-
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 flex items-center justify-between transition-transform hover:-translate-y-1">
-          <div>
-            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Confirmadas</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">—</h3>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-2xl text-orange-600 shadow-sm shadow-orange-100">
-            <CheckCircle size={28} />
-          </div>
-        </div>
-      </div>
-
-      {/* Banner de acción */}
-      <div className="bg-indigo-600 rounded-[3rem] p-12 text-white flex flex-col md:flex-row justify-between items-center shadow-2xl shadow-indigo-200 relative overflow-hidden group">
-        <div className="relative z-10 text-center md:text-left">
-          <h2 className="text-4xl font-black italic tracking-tight mb-3">¿Listo para empezar?</h2>
-          <p className="text-indigo-100 font-medium text-lg max-w-md">
-            Revisa tus citas del día y actualiza el estado de cada sesión.
+    <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans space-y-8">
+      <header className="flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+            Especialistas ✨
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">
+            Gestiona el equipo médico y sus especialidades disponibles.
           </p>
         </div>
+      </header>
 
-        <button
-          onClick={() => router.push('/especialista/citas')}
-          className="mt-8 md:mt-0 bg-white text-indigo-600 px-10 py-5 rounded-[1.5rem] font-black text-lg flex items-center gap-3 hover:scale-105 transition-all shadow-xl active:scale-95 relative z-10"
-        >
-          Ver Mis Citas <ArrowUpRight size={22} strokeWidth={3} />
-        </button>
+      {especialistas.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
+          <Stethoscope className="mx-auto text-slate-300 mb-4" size={48} />
+          <p className="text-slate-500 font-bold">No hay especialistas registrados aún.</p>
+          <p className="text-slate-400 text-sm mt-1">Los especialistas aparecen aquí cuando se registran en el sistema.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {especialistas.map((esp) => (
+            <div key={esp.id} className="group bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-[1.5rem]" />
+              
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <Stethoscope size={22} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                    {esp.nombre}
+                  </h3>
+                  <p className="text-xs font-bold text-indigo-500">{esp.especialidad}</p>
+                </div>
+              </div>
 
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-colors"></div>
-      </div>
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <Mail size={14} className="text-slate-400" />
+                  {esp.email}
+                </div>
+                {esp.telefono && (
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Phone size={14} className="text-slate-400" />
+                    {esp.telefono}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
