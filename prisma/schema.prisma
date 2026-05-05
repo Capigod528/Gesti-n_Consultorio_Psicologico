@@ -7,6 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  SECRETARIO
+  ESPECIALISTA
+}
+
+model Cita {
+  id             Int          @id @default(autoincrement())
+  fecha          DateTime
+  motivo         String
+  notas          String?      @db.Text
+  pacienteId     Int
+  createdAt      DateTime     @default(now())
+  especialistaId Int
+  estado         String       @default("PENDIENTE")
+  updatedAt      DateTime     @updatedAt
+  especialista   Especialista @relation(fields: [especialistaId], references: [id])
+  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
+
+  @@index([especialistaId], map: "citas_especialistaId_fkey")
+  @@index([pacienteId], map: "citas_pacienteId_fkey")
+  @@map("citas")
+}
+
 model Paciente {
   id        Int      @id @default(autoincrement())
   nombre    String
@@ -29,37 +52,22 @@ model Especialista {
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   citas        Cita[]
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
 
   @@map("especialistas")
 }
 
-model Cita {
-  id             Int          @id @default(autoincrement())
-  fecha          DateTime
-  motivo         String
-  notas          String?      @db.Text
-  pacienteId     Int
-  createdAt      DateTime     @default(now())
-  especialistaId Int
-  estado         String       @default("PENDIENTE")
-  updatedAt      DateTime     @updatedAt
-  especialista   Especialista @relation(fields: [especialistaId], references: [id])
-  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
-
-  @@index([especialistaId], map: "citas_especialistaId_fkey")
-  @@index([pacienteId], map: "citas_pacienteId_fkey")
-  @@map("citas")
-}
-
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?  @unique
-  password  String?
-  role      String   @default("USER")
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(cuid())
+  name         String?
+  email        String?       @unique
+  password     String?
+  role         Role          @default(SECRETARIO)
+  image        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  especialista Especialista?
 
   @@map("users")
 }

@@ -1,10 +1,10 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma"; // Asegúrate de haber creado lib/prisma.ts
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const handler = NextAuth({
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -14,24 +14,20 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // 1. Validar que el usuario envió datos
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email y contraseña son obligatorios");
         }
 
-        // 2. Buscar al usuario en tu tabla MySQL 'users'
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
 
-        // 3. Si no existe o no tiene contraseña, rechazar
         if (!user || !user.password) {
           throw new Error("Usuario no encontrado");
         }
 
-        // 4. Comparar la contraseña ingresada con el hash de la base de datos
         const isPasswordCorrect = await bcrypt.compare(
-          credentials.password, 
+          credentials.password,
           user.password
         );
 
@@ -39,32 +35,36 @@ const handler = NextAuth({
           throw new Error("Contraseña incorrecta");
         }
 
-        // 5. Si todo está OK, devolver los datos del usuario
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role, // Esto servirá para los paneles de especialista
+          role: user.role,
         };
       }
     })
   ],
-  // Usamos JWT para manejar la sesión de forma ligera
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login", // Redirigir aquí cuando se necesite login
+    signIn: "/login",
   },
   callbacks: {
-    // Esto es para que el 'role' del usuario esté disponible en el cliente (frontend)
     async jwt({ token, user }) {
-      if (user) token.role = (user as any).role;
+      if (user) {
+        token.role = (user as any).role;
+        token.id = user.id; // ← agregar el id al token
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).role = token.role;
+      if (session.user) {
+        (session.user as any).role = token.role;
+        (session.user as any).id = token.id; // ← agregar el id a la session
+      }
       return session;
     }
   }
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
