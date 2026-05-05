@@ -39,15 +39,15 @@ model Cita {
   fecha          DateTime
   motivo         String
   notas          String?      @db.Text
-  diagnostico    String?      @db.Text
-  sintomas       String?      @db.Text
-  tratamiento    String?      @db.Text
-  medicinas      String?      @db.Text
   pacienteId     Int
   createdAt      DateTime     @default(now())
   especialistaId Int
   estado         String       @default("PENDIENTE")
   updatedAt      DateTime     @updatedAt
+  diagnostico    String?      @db.Text
+  medicinas      String?      @db.Text
+  sintomas       String?      @db.Text
+  tratamiento    String?      @db.Text
   especialista   Especialista @relation(fields: [especialistaId], references: [id])
   paciente       Paciente     @relation(fields: [pacienteId], references: [id])
 
@@ -57,16 +57,16 @@ model Cita {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String?      @unique
-  password      String?
-  role          Role         @default(USER)
-  especialistaId Int?         @unique
-  especialista  Especialista? @relation(fields: [especialistaId], references: [id])
-  image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id             String        @id @default(cuid())
+  name           String?
+  email          String?       @unique
+  password       String?
+  role           Role          @default(USER)
+  image          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  especialistaId Int?          @unique
+  especialista   Especialista? @relation(fields: [especialistaId], references: [id])
 
   @@map("users")
 }

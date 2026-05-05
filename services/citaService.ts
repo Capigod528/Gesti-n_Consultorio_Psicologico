@@ -55,7 +55,6 @@ export async function createCita(data: any) {
 
   if (conflicto) return { error: "Conflicto de horario", status: 409 };
 
-  // Obtener datos del paciente y especialista para el correo
   const [paciente, especialista] = await Promise.all([
     prisma.paciente.findUnique({ where: { id: Number(pacienteId) } }),
     prisma.especialista.findUnique({ where: { id: Number(especialistaId) } }),
@@ -71,7 +70,6 @@ export async function createCita(data: any) {
     },
   });
 
-  // Enviar email al paciente si tiene correo registrado
   if (paciente?.email) {
     const fechaFormateada = fechaHora.toLocaleDateString("es-PE", {
       weekday: "long",
@@ -91,17 +89,14 @@ export async function createCita(data: any) {
         subject: "✅ Tu cita ha sido programada — PsicoControl",
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #fafbff; border-radius: 16px; border: 1px solid #e2e8f0;">
-            
             <div style="text-align: center; margin-bottom: 32px;">
               <h1 style="color: #4f46e5; font-size: 24px; font-weight: 900; margin: 0;">🧠 PsicoControl</h1>
               <p style="color: #64748b; margin-top: 8px; font-size: 14px;">Confirmación de cita</p>
             </div>
-
             <h2 style="color: #0f172a; font-size: 20px; margin: 0 0 8px 0;">Hola, ${paciente.nombre} 👋</h2>
             <p style="color: #475569; line-height: 1.7; margin: 0 0 24px 0;">
               Tu cita ha sido programada exitosamente. Aquí tienes los detalles:
             </p>
-
             <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
@@ -132,12 +127,10 @@ export async function createCita(data: any) {
                 </tr>
               </table>
             </div>
-
             <div style="background: #4f46e5; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
               <p style="color: white; font-weight: 700; margin: 0; font-size: 15px;">📞 ¿Necesitas cambiar tu cita?</p>
               <p style="color: #c7d2fe; margin: 6px 0 0 0; font-size: 14px;">Llámanos: +51 076 123 456 — Lun a Vie, 8am–6pm</p>
             </div>
-
             <p style="text-align: center; color: #94a3b8; font-size: 12px; margin: 0;">
               PsicoControl © 2026 — Gestión Profesional y Confidencial
             </p>
@@ -145,7 +138,6 @@ export async function createCita(data: any) {
         `,
       });
     } catch (emailError) {
-      // El email falla silenciosamente para no bloquear la creación de la cita
       console.error("Error enviando email de confirmación:", emailError);
     }
   }
@@ -156,7 +148,20 @@ export async function createCita(data: any) {
 // --- ACTUALIZAR CITA ---
 export async function updateCita(id: number, data: any) {
   try {
-    const { id: _, fecha, hora, motivo, pacienteId, especialistaId, estado } = data;
+    const { 
+      fecha, 
+      hora, 
+      motivo, 
+      pacienteId, 
+      especialistaId, 
+      estado,
+      diagnostico,
+      medicinas,
+      sintomas,
+      tratamiento,
+      notas 
+    } = data;
+
     const fechaHora = parseFechaHora(fecha, hora);
 
     if (fechaHora || especialistaId) {
@@ -178,6 +183,12 @@ export async function updateCita(id: number, data: any) {
         pacienteId: pacienteId != null ? Number(pacienteId) : undefined,
         especialistaId: especialistaId != null ? Number(especialistaId) : undefined,
         estado: typeof estado === "string" ? estado.toUpperCase() : undefined,
+        // Nuevos campos habilitados para persistencia
+        diagnostico: diagnostico !== undefined ? diagnostico : undefined,
+        medicinas: medicinas !== undefined ? medicinas : undefined,
+        sintomas: sintomas !== undefined ? sintomas : undefined,
+        tratamiento: tratamiento !== undefined ? tratamiento : undefined,
+        notas: notas !== undefined ? notas : undefined,
       },
     });
     return { data: citaActualizada, status: 200 };

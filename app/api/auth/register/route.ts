@@ -31,6 +31,8 @@ export async function POST(request: Request) {
     // Si es especialista, crear con relación
     if (userRole === "SPECIALIST") {
       const user = await prisma.user.create({
+        // Log the user object to inspect especialistaId
+        // console.log("Created specialist user:", user);
         data: {
           name: fullName,
           email,
