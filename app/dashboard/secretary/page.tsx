@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Cita } from "@/types";
-import { Calendar, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Calendar, Loader2, RefreshCw, Sparkles, Search, Download, FileText, CheckCircle, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { NuevaCitaModal } from "@/components/nueva-cita-modal";
 
@@ -13,6 +13,16 @@ interface Especialista {
   id: number;
   nombre: string;
   especialidad: string;
+}
+
+interface HistorialCambios {
+  id: number;
+  citaId: number;
+  campo: string;
+  valorAnterior: string;
+  valorNuevo: string;
+  fecha: string;
+  usuario: string;
 }
 
 const ESTADOS = ["PENDIENTE", "CONFIRMADA", "COMPLETADA", "CANCELADA"];
@@ -25,7 +35,11 @@ export default function SecretaryDashboardPage() {
   const [pacientesCount, setPacientesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filterEstado, setFilterEstado] = useState("");
+  const [filterFecha, setFilterFecha] = useState("");
+  const [busquedaPaciente, setBusquedaPaciente] = useState("");
   const [edits, setEdits] = useState<Record<number, { especialistaId: number; estado: string }>>({});
+  const [checkInStates, setCheckInStates] = useState<Record<number, { checked: boolean; hora: string }>>({});
+  const [historialCambios, setHistorialCambios] = useState<HistorialCambios[]>([]);
 
   const fetchData = async () => {
     try {
@@ -47,6 +61,58 @@ export default function SecretaryDashboardPage() {
       toast.error("No se pudieron cargar los datos de secretaria.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportarAgendaPDF = () => {
+    const fechaHoy = new Date().toLocaleDateString('es-PE');
+    const htmlContent = `
+      <html>
+        <head><title>Agenda del día - ${fechaHoy}</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1 style="color: #4f46e5;">Agenda - ${fechaHoy}</h1>
+          ${filteredCitas.map(cita => `
+            <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0;">
+              <p><strong>${cita.paciente?.nombre}</strong> - ${new Date(cita.fecha).toLocaleTimeString()}</p>
+              <p>Especialista: ${cita.especialista?.nombre}</p>
+              <p>Estado: ${cita.estado}</p>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agenda-${fechaHoy}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Agenda exportada");
+  };
+
+  const handleCheckIn = async (citaId: number) => {
+    const ahora = new Date();
+    const horaFormateada = ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    
+    setCheckInStates(prev => ({
+      ...prev,
+      [citaId]: { checked: true, hora: horaFormateada }
+    }));
+    toast.success("Check-in registrado");
+  };
+
+  const handleEliminarCita = async (citaId: number) => {
+    if (!confirm("¿Estás seguro de eliminar esta cita?")) return;
+    
+    try {
+      const res = await fetch(`/api/citas/${citaId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Cita eliminada");
+        fetchData();
+      }
+    } catch (error) {
+      toast.error("Error al eliminar cita");
     }
   };
 
@@ -103,9 +169,15 @@ export default function SecretaryDashboardPage() {
     }
   };
 
-  const filteredCitas = citas.filter(
-    (cita) => !filterEstado || cita.estado?.toUpperCase() === filterEstado
-  );
+  const filteredCitas = useMemo(() => {
+    return citas.filter((cita) => {
+      const matchEstado = !filterEstado || cita.estado?.toUpperCase() === filterEstado;
+      const matchFecha = !filterFecha || new Date(cita.fecha).toISOString().split('T')[0] === filterFecha;
+      const matchBusqueda = !busquedaPaciente || 
+        cita.paciente?.nombre?.toLowerCase().includes(busquedaPaciente.toLowerCase());
+      return matchEstado && matchFecha && matchBusqueda;
+    });
+  }, [citas, filterEstado, filterFecha, busquedaPaciente]);
 
   if (status === "loading") {
     return (

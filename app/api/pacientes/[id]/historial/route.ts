@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'; // Ajusta según tu carpeta lib
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const id = Number(params.id);
+    const { id: paramId } = await params;
+    const id = Number(paramId);
     
     const historial = await prisma.paciente.findUnique({
       where: { id },

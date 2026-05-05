@@ -39,6 +39,10 @@ model Cita {
   fecha          DateTime
   motivo         String
   notas          String?      @db.Text
+  diagnostico    String?      @db.Text
+  sintomas       String?      @db.Text
+  tratamiento    String?      @db.Text
+  medicinas      String?      @db.Text
   pacienteId     Int
   createdAt      DateTime     @default(now())
   especialistaId Int

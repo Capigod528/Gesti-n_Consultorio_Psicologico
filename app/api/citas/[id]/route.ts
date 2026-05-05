@@ -3,7 +3,8 @@ import { updateCita, deleteCita } from "@/services/citaService";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const id = Number(params.id);
+    const { id: paramId } = await params;
+    const id = Number(paramId);
 
     if (!id) {
       return NextResponse.json({ error: "ID de cita no válido" }, { status: 400 });
@@ -25,7 +26,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const id = Number(params.id);
+    const { id: paramId } = await params;
+    const id = Number(paramId);
 
     if (!id) {
       return NextResponse.json({ error: "ID de cita no válido" }, { status: 400 });
