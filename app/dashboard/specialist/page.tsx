@@ -35,6 +35,7 @@ interface PlantillaClinica {
   diagnostico: string;
   tratamiento: string;
   medicinas: string;
+  sintomas: string;
 }
 
 export default function SpecialistDashboardPage() {
@@ -262,7 +263,7 @@ export default function SpecialistDashboardPage() {
   if (status === "loading") return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
   return (
-    <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
+    <div className="p-8 bg-[#0d1823] min-h-screen font-sans">
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Hola, {userName}</h1>
         <p className="text-slate-500 font-medium mt-1">Gestiona tus consultas y registros médicos.</p>
